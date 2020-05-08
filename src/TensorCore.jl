@@ -69,7 +69,15 @@ julia> a ⊗ b
 2×3 Array{$Int,2}:
  10  14  22
  15  21  33
+
+julia> (b' ⊗ a')'
+2×3 Adjoint{$Int,Array{$Int,2}}:
+ 10  14  22
+ 15  21  33
 ```
+The extra leading of adjoint vectors `a'` are ignored, ensuring that
+`(x ⊗ y)' == y' ⊗ x'` holds for any mixture of ordinary and `Adjoint` vectors.
+The same holds for `transpose`.
 
 For vectors `v` and `w`, the Kronecker product is related to the tensor product by
 `kron(v,w) == vec(w ⊗ v)` or `w ⊗ v == reshape(kron(v,w), (length(w), length(v)))`.
@@ -77,19 +85,11 @@ For vectors `v` and `w`, the Kronecker product is related to the tensor product 
 tensor(A::AbstractArray, B::AbstractArray) = [a*b for a in A, b in B]
 const ⊗ = tensor
 
-const CovectorLike{T} = Union{Adjoint{T,<:AbstractVector},Transpose{T,<:AbstractVector}}
-function tensor(u::AbstractArray, v::CovectorLike)
-    # If `v` is thought of as a covector, you might want this to be two-dimensional,
-    # but thought of as a matrix it should be three-dimensional.
-    # The safest is to avoid supporting it at all. See discussion in #35150.
-    error("`tensor` is not defined for co-vectors, perhaps you meant `*`?")
-end
-function tensor(u::CovectorLike, v::AbstractArray)
-    error("`tensor` is not defined for co-vectors, perhaps you meant `*`?")
-end
-function tensor(u::CovectorLike, v::CovectorLike)
-    error("`tensor` is not defined for co-vectors, perhaps you meant `*`?")
-end
+using LinearAlgebra: AdjOrTransAbsVec
+
+tensor(u::AbstractArray, v::AdjOrTransAbsVec) = tensor(u, vec(v))
+tensor(u::AdjOrTransAbsVec, v::AbstractArray) = tensor(vec(u), v)
+tensor(u::AdjOrTransAbsVec, v::AdjOrTransAbsVec) = tensor(vec(u), vec(v))
 
 """
     tensor!(dest, A, B)
@@ -122,5 +122,9 @@ function tensor!(dest::AbstractArray, A::AbstractArray, B::AbstractArray)
     end
     return dest
 end
+
+tensor!(dest::AbstractArray, A::AbstractArray, B::AdjOrTransAbsVec) = tensor!(dest, A, vec(B))
+tensor!(dest::AbstractArray, A::AdjOrTransAbsVec, B::AbstractArray) = tensor!(dest, vec(A), B)
+tensor!(dest::AbstractArray, A::AdjOrTransAbsVec, B::AdjOrTransAbsVec) = tensor!(dest, vec(A), vec(B))
 
 end

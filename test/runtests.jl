@@ -48,17 +48,18 @@ end
     @test A ⊗ B == [a*b for a in A, b in B]
 
     # Adjoint/transpose is a dual vector, not an AbstractMatrix
-    v = [1,2]
-    @test_throws ErrorException v ⊗ v'
-    @test_throws ErrorException v ⊗ transpose(v)
-    @test_throws ErrorException v' ⊗ v
-    @test_throws ErrorException transpose(v) ⊗ v
-    @test_throws ErrorException v' ⊗ v'
-    @test_throws ErrorException transpose(v) ⊗ transpose(v)
-    @test_throws ErrorException v' ⊗ transpose(v)
-    @test_throws ErrorException transpose(v) ⊗ v'
-    @test_throws ErrorException A ⊗ v'
-    @test_throws ErrorException A ⊗ transpose(v)
+    v = [1,2,3im]
+    w = [4+im, 5-im, 666]
+    @test v ⊗ w' == v * w' == (w ⊗ v')'
+    @test v ⊗ transpose(w) == v * transpose(w)
+    @test v' ⊗ w == conj(v) * transpose(w) == (w' ⊗ v)'
+    @test transpose(v) ⊗ w == v ⊗ w
+    @test v' ⊗ w' == (w ⊗ v)'
+    @test transpose(v) ⊗ transpose(w) == transpose(w ⊗ v)
+    @test v' ⊗ transpose(w) == conj(v) * transpose(w)
+    @test transpose(v) ⊗ v' == v * v'
+    @test A ⊗ v' == A ⊗ conj(v)
+    @test A ⊗ transpose(v) == A ⊗ v
 
     # Docs comparison to `kron`
     v, w = [1,2,3], [5,7]
